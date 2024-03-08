@@ -1,0 +1,188 @@
+<html>
+  <head>
+      <title>Rotations</title>
+    
+      <style>
+        body, html {
+          font-size: 11pt;
+          height: 100%;
+          width: 100%;
+          margin: 0;
+          padding:0;
+        }
+
+        #graph {
+          position:fixed;
+          left:0;
+          top:0;
+          width:100%;
+          height:100%;
+        }
+
+        #main {
+          padding: 1em;
+        }
+
+        #add-shapes-div {
+          position: absolute;
+          width: 200px;
+          border: dotted 1px grey;
+          height: 80px;
+          bottom: 2em;
+          right: 2em;
+          padding: .25em;
+        }
+
+        #add-button {
+          color: white;
+          padding: .5em;
+          background-color: grey;
+          border-radius: .25em;
+          border-color: grey;
+          cursor: pointer;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="main">
+        <canvas id="canvas"></canvas>
+        <div id="add-shapes-div">
+          <div>
+          <span>Add a shape:</span>
+            <select id="shape-select">
+              <option>Square</option>
+              <option>Circle</option>
+              <option>Triangle</option>
+            </select>
+          </div>
+          <button id="add-button" onclick="addShape()">Add</button>
+        </div>
+      </div>
+
+    <script>
+      let shapes = [];
+      const xMin = -5;
+      const xMax = 5;
+      const yMin = -5;
+      const yMax = 5;
+
+      const init = () => {
+        const canvas = document.getElementById("canvas");
+        canvas.width = document.body.clientWidth; 
+        canvas.height = document.body.clientHeight;
+      }
+
+      const draw = () => {
+        const canvas = document.getElementById("canvas");
+        const context = canvas.getContext("2d");
+        context.clearRect(0,0, canvas.width, canvas.height);
+
+        context.fillRect(25, 25, 100, 100);
+        context.clearRect(45, 45, 60, 60);
+        context.strokeRect(50, 50, 50,50);
+
+        console.log('SHAPES', shapes);
+
+        shapes.forEach(s => drawShape(s));
+      }
+
+      const drawShape = (shape) => {
+        const canvas = document.getElementById("canvas");
+        const context = canvas.getContext("2d");
+        const drawsLooksup = {
+          square: (shape, context) => {
+            const {
+              xCartToScreenScale,
+              yCartToScreenScale 
+            } 
+            = getCartesianToScreenInfo({x1: xMin, y1: yMin, x2: xMax, y2: yMax },{x1:0,y1:0,x2:canvas.width,y2: canvas.height })
+
+console.log('xCartToScreenScale', xCartToScreenScale);            
+console.log('yCartToScreenScale', yCartToScreenScale);            
+
+            const {x,y, width, height } = shape;
+            const {x:xS, y:yS} = c2s(x,y);
+console.log(`xS: ${xS}, yS: ${yS}`);            
+
+            context.beginPath();
+            context.rect(xS,yS, width * xCartToScreenScale, height * yCartToScreenScale)
+            context.fill();
+            context.stroke();
+          },
+          circle: () => ({type: 'circle', radius: 5}),
+          triangle: () => ({type: 'triangle', tx: 5, ty:5, lx:-5, ly:-5, rx:5, ry:-5}),        
+        };
+
+        drawsLooksup[shape.type.toLowerCase()](shape, context);
+      }
+
+
+      const drawAxis = () => {}
+
+
+      const addShape = ()  => {
+        const shapesLookup = {
+          square: () => ({type: 'square', width:5, height:5}),
+          circle: () => ({type: 'circle', radius: 5}),
+          triangle: () => ({type: 'triangle', tx: 5, ty:5, lx:-5, ly:-5, rx:5, ry:-5}),
+        };
+
+        const {selectedIndex, options} = document.getElementById("shape-select");
+        const {text: shapeText} = options[selectedIndex];
+
+        shapes = [ {x: 0, y: 0, ...shapesLookup[shapeText.toLowerCase()]()}, ...shapes];
+        draw();
+      }
+
+      const getCartesianToScreenInfo =  (cartCoords, screenCoords)  => {
+        const cartLength = Math.max(cartCoords.x1,cartCoords.x2) -  Math.min(cartCoords.x1,cartCoords.x2);
+        const cartHeight = Math.max(cartCoords.y1,cartCoords.y2) -  Math.min(cartCoords.y1,cartCoords.y2);
+        const screenLength = screenCoords.x2;
+        const screenHeight = screenCoords.y2;        
+        const xCartToScreenScale = cartLength === 0 ? 0 : screenLength / cartLength;
+        const yCartToScreenScale = cartHeight === 0 ? 0 : screenHeight / cartHeight;
+        return {
+          cartLength,
+          cartHeight,
+          screenLength,
+          screenHeight,
+          xCartToScreenScale,
+          yCartToScreenScale,
+        };
+      }
+
+      const cartesianToScreen = (point, cartCoords, screenCoords) => {
+        const { 
+          cartLength,
+          cartHeight,
+          screenLength,
+          screenHeight,
+          xCartToScreenScale,
+          yCartToScreenScale 
+        } = getCartesianToScreenInfo(cartCoords, screenCoords)
+        const {x, y} = point;
+        return {
+            x: x * xCartToScreenScale + screenLength / 2, 
+            y: -1 * y * yCartToScreenScale + screenHeight / 2
+        };
+      }
+      
+      const c2s = (point) => { 
+        const canvas = document.getElementById("canvas");
+        return cartesianToScreen(point, 
+          {x1: xMin, y1: yMin, x2: xMax, y2: yMax },
+          {x1:0,y1:0,x2:canvas.width,y2: canvas.height }
+        );
+      }
+
+      init();
+      draw();
+
+    </script>  
+  </body>
+
+</html>
+
+
+
+
