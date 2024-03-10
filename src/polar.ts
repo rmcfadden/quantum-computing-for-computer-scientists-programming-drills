@@ -1,12 +1,12 @@
 interface Polar {
-    p: number;
+    r: number;
     q: number;
 }
 
 const parsePolar = (c: string): Polar => {
-    const [p,q] = c.split(',');
-    return {p: parseInt(p),q: parseInt(q)};
+    const [r,q] = c.split(',');
+    return {r: parseFloat(r),q: parseFloat(q)};
 }
-const polarToString = (c: Polar) => `${c.p},${c.q}`;
+const polarToString = (c: Polar) => `${c.r},${c.q}`;
 
 export {Polar, parsePolar,polarToString};

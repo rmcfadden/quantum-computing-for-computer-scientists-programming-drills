@@ -6,14 +6,16 @@ import readlineAsync from "./readline-async";
 import {Complex, parseComplex, complexToString } from "./complex"
 import {Polar, parsePolar,  polarToString } from "./polar"
 
+const round = (val: number, digits: number = 6) => Math.round(val * (Math.pow(10, digits))) / (Math.pow(10, digits));
+
 const complexToPolar = (expression: string) => {
-    const c1 = parseComplex(expression);
-    return {p: Math.sqrt(c1.a * c1.a + c1.b * c1.b),  q: c1.b === 0 ? 0 : Math.atan(c1.a / c1.b) } as Polar;
+    const {a,b} = parseComplex(expression);
+    return {r: round(Math.sqrt(a * a + b * b)),  q:a === 0 ? 0 : round(Math.atan(b / a))  } as Polar;
 }
 
 const polarToComplex = (expression: string) => {
-    const p = parsePolar(expression);
-    return { a: p.p * Math.cos(p.q) , b: p.p * Math.sign(p.q)} as Complex;
+    const {r,q} = parsePolar(expression);
+    return { a: round(r * Math.cos(q)) , b: round(r * Math.sin(q))} as Complex;
 }
 
 const run = async (expression?: string) => {
