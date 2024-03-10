@@ -167,24 +167,25 @@
       const addShape = ()  => {
         const shapesLookup = {
           square: ({width, height}) => ({type: 'square', width, height}),
-          circle: () => ({type: 'circle', radius: 2.5}),
+          circle: ({width}) => ({type: 'circle', radius: width}),
           triangle: () => ({type: 'triangle', tx: 5, ty:5, lx:-5, ly:-5, rx:5, ry:-5}),
         };
-
         const shapeRatio = 1 / 8;
         const {cartHeight, cartWidth } =c2sInfo();
         const shapeHeight = cartHeight * shapeRatio;
         const shapeWidth = cartWidth * shapeRatio;
-
         const {selectedIndex, options} = document.getElementById("shape-select");
         const {text: shapeText} = options[selectedIndex];
-        shapes = [ {x: -2.5, y:2.5, ...shapesLookup[shapeText.toLowerCase()]({width: shapeWidth,height:shapeHeight })}, ...shapes];
+        shapes = [ {x: -1 * shapeWidth, y:shapeHeight, 
+          ...shapesLookup[shapeText.toLowerCase()]({width: shapeWidth,height:shapeHeight })}, ...shapes];
         draw();
       }
 
       const rotateLeft = () => rotate(Math.PI / 18);
       const rotateRight = () => rotate(Math.PI / 18);
       const rotate = (radians) = {
+        // cart to polar
+        // complext rotation
 
       }
 
@@ -193,8 +194,8 @@
         const cartHeight = Math.max(cartCoords.y1,cartCoords.y2) -  Math.min(cartCoords.y1,cartCoords.y2);
         const screenWidth = screenCoords.x2;
         const screenHeight = screenCoords.y2;        
-        const xCartToScreenScale = cartWidth === 0 ? 0 : screenWidth / cartWidth;
-        const yCartToScreenScale = cartHeight === 0 ? 0 : screenHeight / cartHeight;
+        const xCartToScreenScale = !cartWidth || screenWidth / cartWidth;
+        const yCartToScreenScale = !cartHeight || screenHeight / cartHeight;
         return {
           cartWidth,
           cartHeight,
@@ -220,6 +221,22 @@
             y: -1 * y * yCartToScreenScale + screenHeight / 2
         };
       }
+
+      const screenToCartesian = (point, screenCoords, cartCoords) => {
+        const { 
+          cartWidth,
+          cartHeight,
+          screenWidth,
+          screenHeight,
+          xCartToScreenScale,
+          yCartToScreenScale 
+        } = getCartesianToScreenInfo(cartCoords, screenCoords)
+        const {x, y} = point;
+        return {
+            x: (x  - (screenWidth / 2)) / xCartToScreenScale, 
+            y: (-1 * y  + (screenHeight / 2)) /yCartToScreenScale
+        };
+      }
       
       window.addEventListener('resize', () => {
         const canvas = document.getElementById("canvas");
@@ -241,10 +258,26 @@
         );
       }
 
-      window.addEventListener('mousedown', (e) => {
+      const s2c = (point) => { 
+        const canvas = document.getElementById("canvas");
+        return screenToCartesian(point, 
+          {x1:0,y1:0,x2:canvas.width,y2: canvas.height },
+          {x1: xMin, y1: yMin, x2: xMax, y2: yMax }
+        );
+      }
+
+      window.addEventListener('mousedown', ({clientX, clientY}) => {
+        const cartCords = s2c({x:clientX, y: clientY});
+        console.log('cartCords', cartCords);
+
+        const tolerance = .1;
+
       });
 
-      window.addEventListener('mousemove', (e) => {
+      window.addEventListener('mousemove', ({clientX, clientY}) => {
+        const cartCords = s2c({x:clientX, y: clientY});
+        console.log('cartCords', cartCords);
+        // if is dragging
       });
 
       window.addEventListener('mouseup', (e) => {
