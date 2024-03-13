@@ -88,6 +88,8 @@
       const xMax = 5;
       const yMin = -5;
       const yMax = 5;
+      let isMouseDown = false;
+      let allShapeCount = 0;
 
       const init = () => {
         const canvas = document.getElementById("canvas");
@@ -176,7 +178,7 @@
         const shapeWidth = cartWidth * shapeRatio;
         const {selectedIndex, options} = document.getElementById("shape-select");
         const {text: shapeText} = options[selectedIndex];
-        shapes = [ {x: -1 * shapeWidth, y:shapeHeight, 
+        shapes = [ {id: allShapeCount++, x: -1 * shapeWidth, y:shapeHeight, 
           ...shapesLookup[shapeText.toLowerCase()]({width: shapeWidth,height:shapeHeight })}, ...shapes];
         draw();
       }
@@ -247,7 +249,8 @@
 
       const c2sInfo = ()  => {
         const canvas = document.getElementById("canvas");
-        return getCartesianToScreenInfo({x1: xMin, y1: yMin, x2: xMax, y2: yMax },{x1:0,y1:0,x2:canvas.width,y2: canvas.height })      
+        return getCartesianToScreenInfo({x1: xMin, y1: yMin, x2: xMax, y2: yMax }
+          ,{x1:0,y1:0,x2:canvas.width,y2: canvas.height })      
       }
       
       const c2s = (point) => { 
@@ -267,20 +270,66 @@
       }
 
       window.addEventListener('mousedown', ({clientX, clientY}) => {
-        const cartCords = s2c({x:clientX, y: clientY});
-        console.log('cartCords', cartCords);
+        isMouseDown = true;
+        const {
+              xCartToScreenScale,
+              yCartToScreenScale 
+            } 
+            = c2sInfo();
+ 
+        const tolerance = 2;
+        const inTolerance = (x1,t,tolerance) => t >= x1 - tolerance && t <= x1 + tolerance; 
+        const inBetween = (x1,x2, t,tolerance) => t >= (x1 - tolerance) && t <= (x2 + tolerance);
 
-        const tolerance = .1;
+        const shapesHitTestsLookup = {
+          square: (shape, {x:pX, y:pY}) => {
+            const {x, y, width, height } = shape;
+            const {x:xS, y:yS} = c2s({x,y});
+            const widthS = width * xCartToScreenScale;
+            const heightS = height * yCartToScreenScale;
+            const topLeft = {x: xS, y: yS};
+            const topRight = {x: xS + widthS, y: yS};
+            const bottomLeft = {x: xS, y: yS + heightS};
+            const bottomRight = {x: xS + widthS, y:yS + heightS};
+            const hasX = inTolerance(topLeft.x, pX, tolerance) || inTolerance(bottomRight.x, pX, tolerance);
+            const hasY = inTolerance(topLeft.y, pY, tolerance) || inTolerance(bottomRight.y, pY, tolerance);
+            const hasVerticalHit = inBetween(topLeft.y, bottomLeft.y, pY, tolerance) || inBetween(topRight.y, bottomRight.y, pY, tolerance);
+            const hasHorizontalHit = inBetween(topLeft.x, topRight.x, pX, tolerance) || inBetween(bottomLeft.x, bottomRight.x, pX, tolerance);
+            return (hasX && hasVerticalHit ) || (hasY && hasHorizontalHit);
+          },
+          circle: (shape, {x, y}) => {
+            const {x, y, radius } = shape;
+            const {x:xS, y:yS} = c2s({x,y});
+
+
+            return false;
+          },
+        };
+
+        const selectedShapes = 
+          shapes.filter(s => { 
+            const result = shapesHitTestsLookup[s.type](s, {x:clientX, y:clientY});
+            console.log('result:', result);
+            return result; 
+          });
+
+          shapes = shapes.map(s => selectedShapes.find(ss => s.id == ss.id) ? ({isSelected: true, ...s}) :s );
+        
+          console.log('selectedShapes', selectedShapes);
+          console.log('shapes:', shapes)
 
       });
 
       window.addEventListener('mousemove', ({clientX, clientY}) => {
+        if(!isMouseDown) return;
+
         const cartCords = s2c({x:clientX, y: clientY});
-        console.log('cartCords', cartCords);
+        //console.log('cartCords', cartCords);
         // if is dragging
       });
 
       window.addEventListener('mouseup', (e) => {
+        isMouseDown = false;
       });
 
 
